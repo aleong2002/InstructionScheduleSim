@@ -28,25 +28,11 @@ public class Issue {
             // state from IS to EX
             instr.setState(InstructionState.EX);
             // setting execution timer based on operation type
-            instr.setExecutionTimer(getLatency(instr.getOpType()));
+            instr.setExecutionTimer(instr.getLatency());
 
             executeList.add(instr);
 
             issuedCount++;
-        }
-    }
-
-    // returns latency based on operation type
-    private int getLatency(int opType) {
-        switch (opType) {
-            case 0:
-                return 1;
-            case 1:
-                return 2;
-            case 2:
-                return 5;
-            default:
-                return 1;
         }
     }
 }
