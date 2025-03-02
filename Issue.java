@@ -26,7 +26,7 @@ public class Issue {
             // decrementing the scheduling queue entry
             issueList.remove(instr);
             // state from IS to EX
-            instr.setState(InstructionState.EX);
+            instr.setState(Instruction.State.EX);
             // setting execution timer based on operation type
             instr.setExecutionTimer(getLatency(instr.getOpType()));
 
