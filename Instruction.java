@@ -5,16 +5,28 @@ public class Instruction {
     
     private State state;
     private int tag; // assign increasing nums for order of instrs. ex: 0, 1, 2 ...
-    private int latency; // derived from optype
     //private int PC; // need to decode hex val
     private String PC;
     private int optype; // "0" =  1 cycle latency, "1" = 2, "2" = 5
     private int dest; // 0 to 127 - need to check?
     private int src1;
     private int src2;
-    private int remainingCycles;
+    private int remainingCycles; // derived from optype - latency
     private boolean src1Ready = false;
     private boolean src2Ready = false;
+    boolean isSrc1Tagged;
+    boolean isSrc2Tagged;
+
+    int IFCycle;
+    int IFDuration;
+    int IDCycle;
+    int IDDuration;
+    int ISCycle;
+    int ISDuration;
+    int EXCycle;
+    int EXDuration;
+    int WBCycle;
+    int WBDuration;
 
     // input ex: 2b6420 0 -1 29 14
     // output: 0 fu{0} src{29,14} dst{-1} IF{0,1} ID{1,1} IS{2,1} EX{3,1} WB{4,1}
@@ -24,54 +36,61 @@ public class Instruction {
         this.tag = globalCounter++;
         this.PC = PC;
         this.optype = optype;
-        this.dest = dest == -1 ? null : dest; // if -1, then null
-        this.src1 = src1 == -1 ? null : src1;
-        this.src2 = src2 == -1 ? null : src2;
+        this.dest = dest; // if -1, then null
+        this.src1 = src1;
+        this.src2 = src2;
         this.remainingCycles = getLatency();
+        
+        this.isSrc1Tagged = false;
+        this.isSrc2Tagged = false;
+
+        this.IFCycle = -1;
+        this.IFDuration = 0;
+        this.IDCycle = -1;
+        this.IDDuration = 0;
+        this.ISCycle = -1;
+        this.ISDuration = 0;
+        this.EXCycle = -1;
+        this.EXDuration = 0;
+        this.WBCycle = -1;
+        this.WBDuration = 0;
+
         switch (optype) {
-            case 0: 
-                this.latency = 1; break;
+            case 0:
+                remainingCycles = 1;
+                break;
             case 1:
-                this.latency = 2; break;
+                remainingCycles = 2;
+                break;
             case 2:
-                this.latency = 5; break;
+                remainingCycles = 5;
+                break;        
             default:
-                throw new IllegalArgumentException("Invalid operation type");
+                throw new IllegalArgumentException("optype is not a valid argument.");
         }
     }
 
     public int getTag() { return tag; }
+    public void setTag(int tag) { this.tag = tag; }
     public State getState() { return state; }
     public void setState(State state) { this.state = state; }
     public int getRemainingCycles() { return remainingCycles; }
     public void decrementCycle() { remainingCycles--; }
     public boolean isExecutionComplete() { return remainingCycles == 0; }
-    public boolean isReady() { return src1Ready && src2Ready; }
+    public boolean isReady(){
+        return (src1 == -1 || (src1 != -1 && src1Ready)) && (src2 == -1 || (src2 != -1 && src2Ready));
+    }    
     public void setSrc1Ready() { src1Ready = true; }
     public void setSrc2Ready() { src2Ready = true; }
+    public void setSrc1NotReady() {src1Ready = false;}
+    public void setSrc2NotReady() {src2Ready = false;}
     public int getDest() { return dest; }
     public int getSrc1() { return src1; }
     public int getSrc2() { return src2; }
-
-    public void updateInstructionState(Instruction instruction) {
-        switch (instruction.getState()) {
-            case IF:
-                instruction.setState(State.ID); // Transition from IF to ID
-                break;
-            case ID:
-                instruction.setState(State.IS); // Transition from ID to IS
-                break;
-            case IS:
-                instruction.setState(State.EX); // Transition from IS to EX
-                break;
-            case EX:
-                instruction.setState(State.WB); // Transition from EX to WB
-                break;
-            case WB:
-                System.out.println("Instruction has completed Write Back.");
-                break;
-        }
-    }
+    public int getOpType() { return optype;}
+    public void setDest(int dest) { this.dest = dest; }
+    public void setSrc1(int src1) { this.src1 = src1; }
+    public void setSrc2(int src2) { this.src2 = src2; }
 
     private int getLatency() {
         return switch (optype) {
@@ -92,17 +111,4 @@ public class Instruction {
         }
     }
 
-    public int getOpType() {
-        return optype;
-    }
 }
-
-/* public void decrementLatency() {
-    if (latency > 0) {
-        latency--;
-    }
-}
-
-public boolean executionCheck() {
-    return latency == 0;
-} */
