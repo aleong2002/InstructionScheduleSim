@@ -35,9 +35,3 @@ public class FakeROB {
     }
 
 }
-
-// when fetch from trace file fakeROB.addInstruction(instruction);
-// removing from ROB if (!fakeROB.isEmpty() && fakeROB.getOldest().isInWB()) {
-//    fakeROB.removeOldest();
-//}
-//update in WB fakeROB.getOldest().setInWB(true); // Mark as written back

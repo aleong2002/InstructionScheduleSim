@@ -5,7 +5,6 @@ public class Instruction {
     
     private State state;
     private int tag; // assign increasing nums for order of instrs. ex: 0, 1, 2 ...
-    //private int PC; // need to decode hex val
     private String PC;
     private int optype; // "0" =  1 cycle latency, "1" = 2, "2" = 5
     private int dest; // 0 to 127 - need to check?
@@ -17,16 +16,17 @@ public class Instruction {
     boolean isSrc1Tagged;
     boolean isSrc2Tagged;
 
+    // for output:
     int IFCycle;
-    int IFDuration;
+    int IFTime;
     int IDCycle;
-    int IDDuration;
+    int IDTime;
     int ISCycle;
-    int ISDuration;
+    int ISTime;
     int EXCycle;
-    int EXDuration;
+    int EXTime;
     int WBCycle;
-    int WBDuration;
+    int WBTime;
 
     // input ex: 2b6420 0 -1 29 14
     // output: 0 fu{0} src{29,14} dst{-1} IF{0,1} ID{1,1} IS{2,1} EX{3,1} WB{4,1}
@@ -45,29 +45,15 @@ public class Instruction {
         this.isSrc2Tagged = false;
 
         this.IFCycle = -1;
-        this.IFDuration = 0;
+        this.IFTime = 0;
         this.IDCycle = -1;
-        this.IDDuration = 0;
+        this.IDTime = 0;
         this.ISCycle = -1;
-        this.ISDuration = 0;
+        this.ISTime = 0;
         this.EXCycle = -1;
-        this.EXDuration = 0;
+        this.EXTime = 0;
         this.WBCycle = -1;
-        this.WBDuration = 0;
-
-        switch (optype) {
-            case 0:
-                remainingCycles = 1;
-                break;
-            case 1:
-                remainingCycles = 2;
-                break;
-            case 2:
-                remainingCycles = 5;
-                break;        
-            default:
-                throw new IllegalArgumentException("optype is not a valid argument.");
-        }
+        this.WBTime = 0;
     }
 
     public int getTag() { return tag; }
