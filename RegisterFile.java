@@ -27,7 +27,5 @@ public class RegisterFile {
         }
     }
 
-    public boolean isReady(int register) {
-        return readyFlags.getOrDefault(register, false);
-    }
+    public boolean isReady(int register) { return readyFlags.getOrDefault(register, false); }
 }

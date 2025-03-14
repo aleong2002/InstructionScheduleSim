@@ -1,181 +1,175 @@
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
 import java.util.Scanner;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
 public class PipelineSimulator {
-    private List<Instruction> dispatchList; //Dispatch Queue
-    private List<Instruction> issueList; //Scheduling Queue
-    private List<Instruction> executeList; //Functional Units
-    private RegisterFile registerFile;
-    private FakeROB fakeROB;
-    private List<Instruction> instructionsToRemove;
-    private int N, S;
-    private final int maxDispatchSize = 2 * N;
-    int fetchCount;
-    int issueCount;
-	int schedulingCount;
-	int dispatchCount;
-	int tag;
-	int cycle;
-    int[] registerFileTags = new int[128];
+    public PipelineSimulator(String[] args) throws IOException {
+        // command line arguments
+        int S = Integer.parseInt(args[0]);
+        int N = Integer.parseInt(args[1]);
+        String traceFile = args[2];
 
-    public PipelineSimulator(String[] args) {
-        S = Integer.parseInt(args[1]);
-        N = Integer.parseInt(args[0]);
-        this.dispatchList = new ArrayList<>();
-        this.issueList = new ArrayList<>(S); //args[1] 
-        this.executeList = new ArrayList<>(N + 1); // args[0] + 1
-        this.registerFile = new RegisterFile();
-        this.fakeROB = new FakeROB();
-        this.instructionsToRemove = new ArrayList<>();
+        // int variables
+        int tag = 0;
+        int cycle = 0;
+        int maxDispatchSize = 2 * N;
+        int issueCount;
+        int schedulingCount = 0;
+        int dispatchCount = 0;
+        int fetchCount;
 
-        this.issueCount = 0;
-		this.schedulingCount = 0;
-		this.dispatchCount = 0;
-		this.fetchCount = N;
-		this.tag = 0;
-		this.cycle = 0;
-    }
-
-    // FakeRetire()
-
-    // Execute()
-    public void Execute() {
-        instructionsToRemove.clear();
-
-        for (Instruction instruction : executeList) {
-            if (instruction.getRemainingCycles() == 1) {
-                instructionsToRemove.add(instruction);
-                instruction.advanceState();
-                // matching tags? update dest register file
-                if (instruction.getDest() != -1 && registerFileTags[instruction.getDest()] == instruction.getTag()) {
-                    registerFile.markReady(instruction.getDest());
-                }
-                // waking up dependent instructions
-                for (Instruction entry : fakeROB.entries) {
-                    if (entry.isSrc1Tagged && entry.getSrc1() == instruction.getTag()) {
-                        entry.setSrc1Ready();
-                    }
-                    if (entry.isSrc2Tagged && entry.getSrc2() == instruction.getTag()) {
-                        entry.setSrc2Ready();
-                    }
-                }
-
-            } else {
-                instruction.decrementCycle();
-            }
-
-        }
-        executeList.removeAll(instructionsToRemove);
-    }
-
-    // Issue()
-
-    // Dispatch()
-    public void Dispatch() {
-        instructionsToRemove.clear();
-        for (Instruction instruction : dispatchList) {
-            if (instruction.getState() == Instruction.State.ID && schedulingCount < S) {
-                instructionsToRemove.add(instruction);
-                dispatchCount--;
-                issueList.add(instruction);
-                schedulingCount++;
-                instruction.advanceState(); // set state to IS
-
-                if (instruction.getSrc1() != -1) {
-                    if (registerFile.isReady(instruction.getSrc1())) {
-                        instruction.setSrc1Ready();
-                    }
-                    else {
-                        instruction.setSrc1NotReady();
-                        instruction.setSrc1(registerFileTags[instruction.getSrc1()]);
-                        instruction.isSrc1Tagged = true;
-                    }
-                }
-    
-                if (instruction.getSrc2() != -1) {
-                    if (registerFile.isReady(instruction.getSrc2())) {
-                        instruction.setSrc2Ready();
-                    }
-                    else {
-                        instruction.setSrc2NotReady();
-                        instruction.setSrc2(registerFileTags[instruction.getSrc2()]);
-                        instruction.isSrc2Tagged = true;
-                    }
-                }
-    
-                if (instruction.getDest() != -1) {
-                    registerFileTags[instruction.getDest()] = instruction.getTag();
-                    registerFile.markNotReady(instruction.getDest());
-                }
-    
-            }
-            if (instruction.getState() == Instruction.State.IF) {
-                instruction.advanceState(); // set state to ID
-            }
-        }
-        dispatchList.removeAll(instructionsToRemove);
-    }
-
-    //Fetch()
-
-    // AdvanceCycle()
-    public void AdvanceCycle() {
-        for (Instruction instruction : fakeROB.entries) {
-            switch (instruction.getState()) {
-                case IF:
-                    if (instruction.IFCycle == -1) {
-                        instruction.IFCycle = cycle;
-                    }
-                    instruction.IFTime++;
-                    break;
-                case ID:
-                    if (instruction.IDCycle == -1) {
-                        instruction.IDCycle = cycle;
-                    }
-                    instruction.IDTime++;
-                    break;
-                case IS:
-                    if (instruction.ISCycle == -1) {
-                        instruction.ISCycle = cycle;
-                    }
-                    instruction.ISTime++;
-                    break;
-                case EX:
-                    if (instruction.EXCycle == -1) {
-                        instruction.EXCycle = cycle;
-                    }
-                    instruction.EXTime++;
-                    break;
-                case WB:
-                    if (instruction.WBCycle == -1) {
-                        instruction.WBCycle = cycle;
-                    }
-                    instruction.WBTime++;
-                    break;
-                default:
-                    break;
-            }
-        }
-        cycle++;
-    }
-    public static void main(String[] args) {
-        PipelineSimulator simulator = new PipelineSimulator(args);
-        try {
+        // list objects
+        List<Instruction> dispatchList = new ArrayList<>(); // Dispatch Queue
+        List<Instruction> issueList = new ArrayList<>(S); // Scheduling Queue
+        List<Instruction> executeList = new ArrayList<>(N + 1); // Functional Units
+        List<Instruction> removalList = new ArrayList<>();
+        RegisterFile rFile = new RegisterFile();
+        FakeROB fakeROB = new FakeROB();
+        int[] RFTags = new int[128];
+        
+        try (Scanner s = new Scanner(new File(traceFile))) {
             do {
-            //simulator.FakeRetire();
-            simulator.Execute();
-            //simulator.Issue();
-            //simulator.Dispatch();
-            //simulator.Fetch();
-            //simulator.AdvanceCycle();
-        } while (simulator.fakeROB.entries.size() > 0 || scanner.hasNext());
-		} catch (FileNotFoundException e) {
-			throw new FileNotFoundException("Trace file does not exist"); 
-		}
+                // FakeRetire()
+                removalList.clear();
+                for (Instruction entry : fakeROB.entries) {
+                    if (entry.getState() == Instruction.State.WB) {
+                        System.out.println(entry.getTag() + " fu{" + entry.getOpType() + "} src{" + entry.getOrigSrc1()
+                                + "," + entry.getOrigSrc2() + "} dst{"
+                                + entry.getDest() + "} IF{" + entry.getIFCycle() + "," + entry.getIFTime() + "} ID{"
+                                + entry.getIDCycle() + "," + entry.getIDTime()
+                                + "} IS{" + entry.getISCycle() + "," + entry.getISTime() + "} EX{" + entry.getEXCycle()
+                                + "," + entry.getEXTime() + "} WB{" + entry.getWBCycle()
+                                + "," + entry.getWBTime() + "}");
+                        removalList.add(entry);
+                    } else { break; }
+                }
+                (fakeROB.entries).removeAll(removalList);
 
-		simulator.cycle--;
+                // Execute()
+                removalList.clear();
+                for (Instruction instr : executeList) {
+                    if (instr.getRemainingCycles() == 1) {
+                        removalList.add(instr);
+                        instr.advanceState();
+                        // matching tags? update dest register file
+                        if (instr.getDest() != -1 && RFTags[instr.getDest()] == instr.getTag() ) { rFile.markReady(instr.getDest()); }
+                        // waking up dependent instructions
+                        for (Instruction entry : fakeROB.entries) {
+                            if (entry.getSrc1() == instr.getTag() && entry.getIsSrc1Tagged() ) { entry.setSrc1Ready(); }
+                            if (entry.getSrc2() == instr.getTag() && entry.getIsSrc2Tagged()) { entry.setSrc2Ready(); }
+                        }
+                    } else { instr.decrementCycle(); }
+                }
+                executeList.removeAll(removalList);
+
+                // Issue()
+                issueCount = N + 1;
+                removalList.clear();
+                for (Instruction instr : issueList) {
+                    if (instr.isReady() && issueCount > 0) {
+                        schedulingCount--;
+                        issueCount--;
+                        removalList.add(instr);
+                        executeList.add(instr);
+                        instr.advanceState();
+                    }
+                }
+                issueList.removeAll(removalList);
+
+                // Dispatch()
+                removalList.clear();
+                for (Instruction instr : dispatchList) {
+                    if (instr.getState() == Instruction.State.ID && schedulingCount < S) {
+                        schedulingCount++;
+                        dispatchCount--;
+                        removalList.add(instr);
+                        issueList.add(instr);
+                        // transition from ID to IS
+                        instr.advanceState();
+                        if (instr.getSrc1() != -1) {
+                            if (rFile.isReady(instr.getSrc1())) { instr.setSrc1Ready(); }
+                            else {
+                                instr.setSrc1NotReady();
+                                instr.setSrc1(RFTags[instr.getSrc1()]);
+                                instr.setIsSrc1Tagged(true);
+                            }
+                        }
+                        if (instr.getSrc2() != -1) {
+                            if (rFile.isReady(instr.getSrc2())) { instr.setSrc2Ready(); } 
+                            else {
+                                instr.setSrc2NotReady();
+                                instr.setSrc2(RFTags[instr.getSrc2()]);
+                                instr.setIsSrc2Tagged(true);
+                            }
+                        }
+                        if (instr.getDest() != -1) {
+                            RFTags[instr.getDest()] = instr.getTag();
+                            rFile.markNotReady(instr.getDest());
+                        }
+                    }
+                    // transistion from IF to ID to model 1 cycle latency for IF
+                    if (instr.getState() == Instruction.State.IF) { instr.advanceState(); }
+                }
+                // remove instructions in ID state
+                dispatchList.removeAll(removalList);
+
+                // load instructions to fakeROB in N batches
+                fetchCount = N;
+                while (fetchCount > 0 && dispatchCount < maxDispatchSize && s.hasNext()) {
+                    String PC = s.next();
+                    int optype = s.nextInt();
+                    int dest = s.nextInt();
+                    int src1 = s.nextInt();
+                    int src2 = s.nextInt();
+
+                    Instruction instr = new Instruction(PC, optype, dest, src1, src2);
+                    fetchCount--;
+                    tag++;
+                    fakeROB.addInstruction(instr);
+                    dispatchList.add(instr);
+                    dispatchCount++;
+                }
+
+                for (Instruction instr : fakeROB.entries) {
+                    switch (instr.getState()) {
+                        case IF:
+                            if (instr.getIFCycle() == -1) { instr.setIFCycle(cycle); }
+                            instr.setIFTime(instr.getIFTime() + 1);
+                            break;
+                        case ID:
+                            if (instr.getIDCycle() == -1) { instr.setIDCycle(cycle); }
+                            instr.setIDTime(instr.getIDTime() + 1);
+                            break;
+                        case IS:
+                            if (instr.getISCycle() == -1) { instr.setISCycle(cycle); }
+                            instr.setISTime(instr.getISTime() + 1);
+                            break;
+                        case EX:
+                            if (instr.getEXCycle() == -1) { instr.setEXCycle(cycle); }
+                            instr.setEXTime(instr.getEXTime() + 1);
+                            break;
+                        case WB:
+                            if (instr.getWBCycle() == -1) {
+                                instr.setWBCycle(cycle);
+                                instr.setWBTime(1);
+                            }
+                            break;
+                        default:
+                            throw new IllegalArgumentException("No valid instr state");
+                    }
+                }
+                cycle++;
+            } while (!fakeROB.isEmpty() || s.hasNext()); // advancecycle()
+            cycle--;
+            System.out.println(String.format("%-25s= %d", "number of instructions", tag));
+            System.out.println(String.format("%-25s= %d", "number of cycles", cycle));
+            System.out.println(String.format("%-25s= %.5f", "IPC", (float) tag / cycle));
+        }
+        catch (FileNotFoundException e) {
+            throw new FileNotFoundException("Tracefile does not exist");
+        }
     }
 }

@@ -25,12 +25,14 @@ public class FakeROB {
     }
 
     public Instruction getOldest() {
-        if (isEmpty()) throw new IllegalStateException("FakeROB is empty");
+        if (isEmpty())
+            throw new IllegalStateException("FakeROB is empty");
         return entries.get(0);
     }
 
     public void removeOldest() {
-        if (isEmpty()) throw new IllegalStateException("FakeROB is empty");
+        if (isEmpty())
+            throw new IllegalStateException("FakeROB is empty");
         entries.remove(0);
     }
 
