@@ -27,7 +27,6 @@ public class PipelineSimulator {
         List<Instruction> executeList = new ArrayList<>(N + 1); // Functional Units
         List<Instruction> removalList = new ArrayList<>(); // reusable list of instructions to remove
         
-        
         Scanner s = new Scanner(new File(traceFile));
         do {
             // FakeRetire()
