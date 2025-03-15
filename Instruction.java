@@ -101,16 +101,34 @@ public class Instruction {
     public void setSrc2NotReady() {src2Ready = false;}
     public void setIsSrc1Tagged(boolean bool) { isSrc1Tagged = bool; }
     public void setIsSrc2Tagged(boolean bool) { isSrc2Tagged = bool; }
-    public void setIFCycle(int cycle) { IFCycle = cycle; }
-    public void setIFTime(int time) { IFTime = time; }
-    public void setIDCycle(int cycle) { IDCycle = cycle; }
-    public void setIDTime(int time) { IDTime = time; }
-    public void setISCycle(int cycle) { ISCycle = cycle; }
-    public void setISTime(int time) { ISTime = time; }
-    public void setEXCycle(int cycle) { EXCycle = cycle; }
-    public void setEXTime(int time) { EXTime = time; }
-    public void setWBCycle(int cycle) { WBCycle = cycle; }
-    public void setWBTime(int time) { WBTime = time; }
+
+    // update cycle nums and durations
+    public void updateTiming(int cycle) {
+        switch (state) {
+            case IF:
+                if (IFCycle == -1) { IFCycle = cycle; }
+                IFTime++;
+                break;
+            case ID:
+                if (IDCycle == -1) { IDCycle = cycle; }
+                IDTime++;
+                break;
+            case IS:
+                if (ISCycle == -1) { ISCycle = cycle; }
+                ISTime++;
+                break;
+            case EX:
+                if (EXCycle == -1) { EXCycle = cycle; }
+                EXTime++;
+                break;
+            case WB:
+                if (WBCycle == -1) { WBCycle = cycle; }
+                WBTime = 1;
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid state");
+        }
+    }
 
     // decrement cycle
     public void decrementCycle() { remainingCycles--; }  

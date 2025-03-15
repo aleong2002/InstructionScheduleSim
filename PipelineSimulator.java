@@ -5,6 +5,15 @@ import java.io.File;
 import java.io.IOException;
 
 public class PipelineSimulator {
+    private Instruction createInstruction(Scanner s) {
+        String PC = s.next();
+        int optype = s.nextInt();
+        int dest = s.nextInt();
+        int src1 = s.nextInt();
+        int src2 = s.nextInt();
+        return new Instruction(PC, optype, dest, src1, src2);
+    }    
+
     public PipelineSimulator(String[] args) throws IOException {
         // command line arguments
         int S = Integer.parseInt(args[0]);
@@ -51,7 +60,7 @@ public class PipelineSimulator {
                 if (instr.getRemainingCycles() == 1) {
                     removalList.add(instr);
                     instr.advanceState();
-                    // matching tags? update dest register file
+                    // update dest in register file
                     if (instr.getDest() != -1 && RFTags[instr.getDest()] == instr.getTag() ) { rFile.markReady(instr.getDest()); }
                     // waking up dependent instructions
                     for (Instruction entry : fakeROB.entries) {
@@ -116,12 +125,7 @@ public class PipelineSimulator {
             // load instructions to fakeROB in N batches
             int fetchCount = N;
             while (fetchCount > 0 && dispatchCount < maxDispatchSize && s.hasNext()) {
-                String PC = s.next();
-                int optype = s.nextInt();
-                int dest = s.nextInt();
-                int src1 = s.nextInt();
-                int src2 = s.nextInt();
-                Instruction instr = new Instruction(PC, optype, dest, src1, src2);
+                Instruction instr = createInstruction(s);
                 fetchCount--;
                 tag++;
                 fakeROB.addInstruction(instr);
@@ -130,33 +134,9 @@ public class PipelineSimulator {
             }
 
             for (Instruction instr : fakeROB.entries) {
-                switch (instr.getState()) {
-                    case IF:
-                        if (instr.getIFCycle() == -1) { instr.setIFCycle(cycle); }
-                        instr.setIFTime(instr.getIFTime() + 1);
-                        break;
-                    case ID:
-                        if (instr.getIDCycle() == -1) { instr.setIDCycle(cycle); }
-                        instr.setIDTime(instr.getIDTime() + 1);
-                        break;
-                    case IS:
-                        if (instr.getISCycle() == -1) { instr.setISCycle(cycle); }
-                        instr.setISTime(instr.getISTime() + 1);
-                        break;
-                    case EX:
-                        if (instr.getEXCycle() == -1) { instr.setEXCycle(cycle); }
-                        instr.setEXTime(instr.getEXTime() + 1);
-                        break;
-                    case WB:
-                        if (instr.getWBCycle() == -1) {
-                            instr.setWBCycle(cycle);
-                            instr.setWBTime(1);
-                        }
-                        break;
-                    default:
-                        throw new IllegalArgumentException("No valid instr state");
-                }
+                instr.updateTiming(cycle);
             }
+
             cycle++;
         } while (!fakeROB.isEmpty() || s.hasNext()); // advancecycle()
         cycle--;
