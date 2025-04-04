@@ -43,4 +43,4 @@ To run the simulator, input the command-line arguments as follows:
 where `<S>` is the Scheduling Queue size, `<N>` is the peak fetch and dispatch rate, and `<tracefile>` is the filename of the input trace. Issue rate will be `<N + 1>`.
 Simulator will print output to the console but can also be redirected to file name (see Validation Requirements #1).
 
-To 'make clean' the simulator, type `make clean` in command-line to remove object (.o) files and simulator executable.
+To 'make clean' the simulator, type `make clean` in command-line to remove object (.class) files and simulator executable.
