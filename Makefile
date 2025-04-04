@@ -11,4 +11,4 @@ sim_cache:
 
 # removes .class files
 clean:
-	-rm -f *.class
+	rm -f *.class
