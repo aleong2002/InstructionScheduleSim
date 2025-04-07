@@ -38,7 +38,7 @@ command: `diff -i -w <your_output_file> <posted_output_file>`
 Provided is a Makefile that automatically compiles the simulator. This Makefile creates a simulator named "sim". 
 To run the simulator, input the command-line arguments as follows:
 
-```sim <S> <N> <tracefile>```
+```java sim <S> <N> <tracefile>```
 
 where `<S>` is the Scheduling Queue size, `<N>` is the peak fetch and dispatch rate, and `<tracefile>` is the filename of the input trace. Issue rate will be `<N + 1>`.
 Simulator will print output to the console but can also be redirected to file name (see Validation Requirements #1).
